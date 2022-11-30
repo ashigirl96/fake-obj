@@ -5,6 +5,18 @@ import * as process from "process";
 
 const path = './examples/country.ts'
 
+function generateFake(type: Type<ts.Type>) {
+  if (type.isString()) {
+    return "fuga"
+  }
+  if (type.isNumber()) {
+    return 10
+  }
+  if (type.isBoolean()) {
+    return true
+  }
+}
+
 function main6() {
   const project = new Project({})
   project.addSourceFileAtPath(path)
@@ -15,22 +27,36 @@ function main6() {
   const typeAlias = sourceFile.getTypeAliasOrThrow("Country")
 
   const visitType = (name: string, entryType: Type<ts.Type>, result: any) => {
-    for (const symbol of entryType.getProperties()) {
-      const name = symbol.getName()
-      const type = symbol.getTypeAtLocation(typeAlias)
-      if (type.isArray()) {
-        continue
-      }
-      if (type.isNumber()) {
-        result[name] = 10
-        continue
-      }
-      if (type.isString()) {
-        result[name] = "fuga"
-        continue
-      }
-      if (type.isObject()) {
-        result[name] = visitType(name, type, {})
+    if (entryType.isNumber()) {
+      result[name] = 10
+    }
+    if (entryType.isString()) {
+      result[name] = "fuga"
+    }
+    if (entryType.isObject()) {
+      for (const symbol of entryType.getProperties()) {
+        const name = symbol.getName()
+        const type = symbol.getTypeAtLocation(typeAlias)
+        if (type.isArray()) {
+          const elementType = checker.getTypeArguments(type)[0];
+          result[name] = [
+            generateFake(elementType),
+            generateFake(elementType),
+            generateFake(elementType),
+          ]
+          continue
+        }
+        if (type.isNumber()) {
+          result[name] = 10
+          continue
+        }
+        if (type.isString()) {
+          result[name] = "fuga"
+          continue
+        }
+        if (type.isObject()) {
+          result[name] = visitType(name, type, {})
+        }
       }
     }
     return result

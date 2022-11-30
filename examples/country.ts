@@ -5,7 +5,7 @@ type Country = {
 
 type Human = {
   name: Name,
-  age: number
+  age: number[]
 }
 
 type Name = {
