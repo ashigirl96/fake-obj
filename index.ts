@@ -15,9 +15,10 @@ function generateFake(type: Type<ts.Type>) {
   if (type.isBoolean()) {
     return true
   }
+  return undefined
 }
 
-function main6() {
+function main() {
   const project = new Project({})
   project.addSourceFileAtPath(path)
   const sourceFile = project.getSourceFile(path)
@@ -29,34 +30,20 @@ function main6() {
   const visitType = (name: string, entryType: Type<ts.Type>, result: any) => {
     if (entryType.isNumber()) {
       result[name] = 10
-    }
-    if (entryType.isString()) {
+    } else if (entryType.isString()) {
       result[name] = "fuga"
-    }
-    if (entryType.isObject()) {
+    } else if (entryType.isArray()) {
+      const elementType = checker.getTypeArguments(entryType)[0];
+      result[name] = [
+        generateFake(elementType),
+        generateFake(elementType),
+        generateFake(elementType),
+      ]
+    } else if (entryType.isObject()) {
       for (const symbol of entryType.getProperties()) {
         const name = symbol.getName()
         const type = symbol.getTypeAtLocation(typeAlias)
-        if (type.isArray()) {
-          const elementType = checker.getTypeArguments(type)[0];
-          result[name] = [
-            generateFake(elementType),
-            generateFake(elementType),
-            generateFake(elementType),
-          ]
-          continue
-        }
-        if (type.isNumber()) {
-          result[name] = 10
-          continue
-        }
-        if (type.isString()) {
-          result[name] = "fuga"
-          continue
-        }
-        if (type.isObject()) {
-          result[name] = visitType(name, type, {})
-        }
+        result[name] = visitType(name, type, {})
       }
     }
     return result
@@ -66,4 +53,4 @@ function main6() {
   console.log(JSON.stringify(result, null, 2))
 }
 
-main6()
+main()
