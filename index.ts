@@ -5,19 +5,6 @@ import * as process from "process";
 
 const path = './examples/country.ts'
 
-function generateFake(type: Type<ts.Type>) {
-  if (type.isString()) {
-    return "fuga"
-  }
-  if (type.isNumber()) {
-    return 10
-  }
-  if (type.isBoolean()) {
-    return true
-  }
-  return undefined
-}
-
 function main() {
   const project = new Project({})
   project.addSourceFileAtPath(path)
@@ -27,25 +14,39 @@ function main() {
   const checker = project.getTypeChecker();
   const typeAlias = sourceFile.getTypeAliasOrThrow("Country")
 
-  const visitType = (name: string, entryType: Type<ts.Type>, result: any) => {
-    if (entryType.isNumber()) {
-      result[name] = 10
-    } else if (entryType.isString()) {
-      result[name] = "fuga"
-    } else if (entryType.isArray()) {
-      const elementType = checker.getTypeArguments(entryType)[0];
-      result[name] = [
-        generateFake(elementType),
-        generateFake(elementType),
-        generateFake(elementType),
-      ]
-    } else if (entryType.isObject()) {
-      for (const symbol of entryType.getProperties()) {
-        const name = symbol.getName()
-        const type = symbol.getTypeAtLocation(typeAlias)
-        result[name] = visitType(name, type, {})
-      }
+  // FIXME: dont use any
+  function generateFake(type: Type<ts.Type>): any {
+    if (type.isString()) {
+      return "fuga"
     }
+    if (type.isNumber()) {
+      return 10
+    }
+    if (type.isBoolean()) {
+      return true
+    }
+    if (type.isArray()) {
+      const elementType = checker.getTypeArguments(type)[0];
+      return generateFakes(elementType, 3)
+    }
+    if (type.isObject()) {
+      // FIXME: dont use any
+      const result: any = {}
+      for (const symbol of type.getProperties()) {
+        const name = symbol.getName()
+        result[name] = generateFake(symbol.getTypeAtLocation(typeAlias))
+      }
+      return result
+    }
+    return undefined
+  }
+
+  function generateFakes(type: Type<ts.Type>, length: number) {
+    return Array.from({ length }).map(() => generateFake(type))
+  }
+
+  const visitType = (name: string, entryType: Type<ts.Type>, result: any) => {
+    result[name]  = generateFake(entryType)
     return result
   }
 
@@ -54,3 +55,4 @@ function main() {
 }
 
 main()
+

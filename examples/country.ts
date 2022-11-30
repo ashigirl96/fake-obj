@@ -1,14 +1,18 @@
 type Country = {
-  Jp: Human,
-  En: Human,
+  Jp: Human[],
+  En: {
+    human: Human,
+  },
 }
 
 type Human = {
   name: Name,
-  age: number[]
+  age: Age
 }
 
 type Name = {
   first: string
   last: string
 }
+
+type Age = number
